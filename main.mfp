@@ -1,4 +1,5 @@
-VAR/word/hello!;
-PRINT/*word;
-SHOWVARS;
+VAR/word/int/21;
+PRINT/i*word;
+VAR/word/string/hello!!!;
+PRINT/s*word;
 TERMINATE;
