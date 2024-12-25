@@ -43,7 +43,9 @@ fn main() {
 
     let mut index: i32 = -1;
 
-    let mut vars: HashMap<String, &str> = HashMap::new();
+    let mut string_vars: HashMap<String, &str> = HashMap::new();
+    let mut int_vars: HashMap<String, i32> = HashMap::new();
+    let mut bool_vars: HashMap<String, bool> = HashMap::new();
 
     for token in &contents {
         index += 1;
@@ -51,11 +53,24 @@ fn main() {
             let parts: Vec<&str> = token.split("/").collect();
             if parts.len() == 2 {
                 if parts[1].contains("*") {
-                    match vars.get(parts[1].trim_start_matches('*')) {
-                        Some(value) => print!("{}", value),
-                        None => {
-                            println!("MFPL: Error: Invalid variable: {}", parts[1]);
-                            process::exit(1);
+                    let subparts: Vec<&str> = parts[1].split("*").collect();
+                    match subparts[0] {
+                        "s" => print!("{}", match string_vars.get(subparts[1]) {
+                            Some(string) => string,
+                            None => {
+                                println!("MFPL: Error: Couldnt find variable named {}", subparts[1]);
+                                process::exit(1);
+                            }
+                        }),
+                        "i" => print!("{}", match int_vars.get(subparts[1]) {
+                            Some(int) => int,
+                            None => {
+                                println!("MFPL: Error: Couldnt find variable named {}", subparts[1]);
+                                process::exit(1);
+                            }
+                        }),
+                        &_ => {
+                            println!("MFPL: Error: Unknown format specifier: {} at line {}", subparts[0], index)
                         }
                     }
                 } else {
@@ -68,13 +83,33 @@ fn main() {
 
         } else if token.as_str().contains("VAR") {
             let parts: Vec<&str> = token.split("/").collect();
-            if parts.len() == 3 {
-                vars.insert(parts[1].to_string(), parts[2]);
-            }
-
-        } else if token.as_str().contains("SHOWVARS") {
-            for (key, value) in &vars {
-                println!("{}: {}", key, value);
+            if parts.len() == 4 {
+                match parts[2] {
+                    "string" => {
+                        string_vars.insert(parts[1].to_string(), parts[3]);
+                    },
+                    "int" => {
+                        int_vars.insert(parts[1].to_string(), parts[3].parse().expect("MFPL: Error: Not an integer"));
+                    },
+                    "bool" => {
+                        bool_vars.insert(parts[1].to_string(), match parts[3] {
+                            "true" => true,
+                            "false" => false,
+                            &_ => {
+                                println!("MFPL: Error: Not a bool");
+                                process::exit(1);
+                            }
+                        });
+                    }
+                    &_ => {
+                        println!("MFPL: Error: Unknown type {} at token {}", parts[2], index);
+                        process::exit(1);
+                    }
+                }
+            } else {
+                println!("MFPL: SyntaxError: Not enough or too many arguments for VAR at line {}, expected 4 but {} was provided", index, parts.len());
+                println!("MFPL: Note about ^: Parts are {:?}", parts);
+                process::exit(1)
             }
 
         } else if token.as_str().contains("TERMINATE") {
@@ -83,19 +118,5 @@ fn main() {
         } else if token.as_str().contains("ERRTERMINATE") {
             process::exit(1);
         }
-        // match token.as_str() {
-        //     "PRINT" => {
-        //         if index as usize + 1 < contents.len() {
-        //             print!("{}", &contents[index as usize + 1]);
-        //         } else {
-        //             eprintln!("MFPL: Error: PRINT command without argument at token number: {}", index as usize);
-        //             process::exit(1);
-        //         }
-        //     }
-        //     &_ => {
-        //         println!("MFPL: Error: Unexpected unknown token: {}, On token number: {}", &contents[index as usize], index as usize);
-        //         process::exit(1);
-        //     }
-        // }
     }
 }
