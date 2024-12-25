@@ -1,0 +1,4 @@
+VAR/word/hello!;
+PRINT/*word;
+SHOWVARS;
+TERMINATE;
